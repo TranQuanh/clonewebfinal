@@ -6,9 +6,9 @@ const userSchema = new mongoose.Schema(
     last_name: {type: String},
     login_name:{type: String},
     password: {type:String},
-    localtion: {type: String},
+    location: {type: String},
     description: {type: String},
     occupation: {type: String},
   }
 );
-module.exports = mongoose.model.Users || mongoose.model("Users",userSchema);
+module.exports =  mongoose.model("Users",userSchema);

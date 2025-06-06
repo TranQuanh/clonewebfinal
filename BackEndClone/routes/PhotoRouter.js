@@ -49,27 +49,27 @@ router.get("/photoOfUser/:id",requireAuth,async(request,response)=>{
     try{
         const id = request.params.id;
         const photos = await Photo.find({user_id:id})
-            .populate("comments.user_id", "_id first_name last_name")
+            .populate({
+                path: 'comments.user_id',
+                select: 'first_name last_name'
+            })
+            .lean()
             .exec();
-        const photoComents = photos.map(photo=>{
-            const comments = photo.comments.map(comment=>{
-                return{
-                    _id: comment._id,
-                    comment: comment.comment,
-                    date_time: comment.date_time,
-                    user: comment.user_id,
-                }
-            });
-            return{
-                _id: photo._id,
-                file_name: photo.file_name,
-                date_time: photo.date_time,
-                user_id: photo.user_id,
-                comments: comments,
-            }
-        });
-        return response.status(200).json(photoComents);
 
+        const photoComments = photos.map(photo => ({
+            _id: photo._id,
+            file_name: photo.file_name,
+            date_time: photo.date_time,
+            user_id: photo.user_id,
+            comments: photo.comments.map(comment => ({
+                _id: comment._id,
+                comment: comment.comment,
+                date_time: comment.date_time,
+                user: comment.user_id // user_id đã được populate với first_name và last_name
+            }))
+        }));
+
+        return response.status(200).json(photoComments);
     }catch(error){
         console.log(error);
         return response.status(500).json({error: "Internal server error"})
@@ -77,26 +77,35 @@ router.get("/photoOfUser/:id",requireAuth,async(request,response)=>{
 });
 
 router.post("/commentOfPhoto/:photo_id",requireAuth,async(request,response)=>{
-    const photoID = request.params.photo_id;
-    const userID = request.session.userID;
+    try {
+        const photoID = request.params.photo_id;
+        const userID = request.session.userID;
+        const {comment} = request.body;
 
-    const {comment} = request.body;
-    if(!comment){
-        return response.status(400).json({error:"empty comment"})
-    }
-    try{
+        if(!comment || !comment.trim()){
+            return response.status(400).json({error:"Empty comment"});
+        }
+
         const photo = await Photo.findById(photoID);
+        if (!photo) {
+            return response.status(404).json({error: "Photo not found"});
+        }
+
         const newComment = {
             comment: comment,
             date_time: new Date(),
             user_id: userID,
-        }
-        await photo.comments.push(newComment);
+        };
+
+        photo.comments = photo.comments || [];
+        photo.comments.push(newComment);
         await photo.save();
-        return response.status(200).json({message:"comment added successfully"});
-    }catch(err){
-        console.log(err);
-        return response.status(500).json({error: "Internal server error"})
+
+        return response.status(200).json({message:"Comment added successfully"});
+    } catch(err) {
+        console.log("Error adding comment:", err);
+        return response.status(500).json({error: "Internal server error"});
     }
 });
+
 module.exports = router;

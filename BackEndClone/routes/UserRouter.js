@@ -40,6 +40,26 @@ router.post("/admin/login",async(request,response)=>{
         return response.status(500).json({error: "Internal server error"});
     }
 });
+router.get("/check-session", async (request, response) => {
+    if (!request.session.userID) {
+        return response.status(401).json({ error: "No active session" });
+    }
+    try {
+        const user = await User.findById(request.session.userID);
+        if (!user) {
+            return response.status(404).json({ error: "User not found" });
+        }
+        return response.status(200).json({
+            _id: user._id,
+            login_name: user.login_name,
+            first_name: user.first_name,
+            last_name: user.last_name,
+        });
+    } catch (error) {
+        console.error("Session check error:", error);
+        return response.status(500).json({ error: "Internal server error" });
+    }
+});
 
 router.post("/register",async(request,reponse)=>{
         const{
@@ -66,6 +86,7 @@ router.post("/register",async(request,reponse)=>{
                 last_name: last_name,
                 location: location || "",
                 description: description ||"",
+                occupation: occupation || "",
             });
             console.log(newUser);
             await newUser.save();
@@ -119,25 +140,6 @@ router.get("/:id",requireAuth,async(request,response)=>{
     }
 });
 
-router.get("/check-session", async (request, response) => {
-    if (!request.session.userID) {
-        return response.status(401).json({ error: "No active session" });
-    }
-    try {
-        const user = await User.findById(request.session.userID);
-        if (!user) {
-            return response.status(404).json({ error: "User not found" });
-        }
-        return response.status(200).json({
-            _id: user._id,
-            login_name: user.login_name,
-            first_name: user.first_name,
-            last_name: user.last_name,
-        });
-    } catch (error) {
-        console.error("Session check error:", error);
-        return response.status(500).json({ error: "Internal server error" });
-    }
-});
+
 
 module.exports = router;

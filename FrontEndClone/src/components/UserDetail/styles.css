@@ -1,0 +1,38 @@
+.user-detail-wrapper {
+    width: 100%;
+
+    margin: 0 auto;
+    display: block;
+}
+
+.user-detail {
+    padding: 20px;
+    width: 100%;
+}
+
+.user-detail .user-name {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #eee;
+    width: 100%;
+}
+
+.user-detail-wrapper .user-info {
+    font-size: 16px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.user-detail-wrapper .user-info div {
+    display: block;
+    width: 100%;
+    margin-bottom: 15px;
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+    line-height: 1.5;
+    clear: both;
+}
+

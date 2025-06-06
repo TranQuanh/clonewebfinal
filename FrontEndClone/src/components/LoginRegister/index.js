@@ -7,12 +7,67 @@ function LoginRegister({onLoginSuccess}){
     const [password, setPassword] = useState("");
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
+    const [location, setLocation] = useState("");
     const [description, setDescription] = useState("");
     const [occupation, setOccupation] = useState("");
     const [error, setError] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [registerError, setRegisterError] = useState("");
 
+    const clearFromFields = ()=>{
+        setLoginName("");
+        setPassword("");
+        setConfirmPassword("");
+        setFirstName("");
+        setLastName("");
+        setLocation("");
+        setDescription("");
+        setOccupation("");
+    }
+    const handleRegister = async(e)=>{
+        e.preventDefault();
+        if(!loginName || !password || !confirmPassword || !firstName || !lastName || !location || !description || !occupation){
+            setRegisterError("Please fill in all fields");
+            return;
+        }
+        if(password !== confirmPassword){
+            setRegisterError("Passwords do not match");
+            return;
+        }
+        setRegisterError("");
+        try{
+            const response = await fetch(`${API_BASE_URL}/api/user/register`,{
+                method: "POST",
+                headers:{
+                    "Content-Type":"application/json"
+                },
+                body: JSON.stringify({
+                    login_name: loginName,
+                    password: password,
+                    first_name: firstName,
+                    last_name: lastName,
+                    location: location,
+                    description: description,
+                    occupation: occupation,
+                })
+            });
+            if(response.ok){
+                const result = await response.json();
+                alert("You Register successfull");
+                clearFromFields();
+                setRegisterMode(false);
+            }
+            else{
+                const errorData = await response.json();
+                setRegisterError(errorData.error || "Registration failed. Please try again.");
+            }
+        }catch(err){
+            console.log(err);
+            setRegisterError("Registration failed. Please try again.");
+            clearFromFields();
+            setRegisterMode(false);
+        }
+    }
     const handleLogin = async(e) => {
         e.preventDefault();
         if(!loginName || !password){
@@ -52,7 +107,7 @@ function LoginRegister({onLoginSuccess}){
                 {registerMode ? (
                     <div className="login-box">
                         <h1>Register</h1>
-                        <form>
+                        <form onSubmit={handleRegister}>
                             <div className="form-group">
                                 <div className="form-field full-width">
                                     <label>Login name:</label>
@@ -101,6 +156,15 @@ function LoginRegister({onLoginSuccess}){
                                             placeholder="Enter Last Name"
                                         />
                                     </div>
+                                </div>
+                                <div className="form-field">
+                                    <label>Location:</label>
+                                    <input
+                                        type="text"
+                                        value={location}
+                                        onChange={(e) => setLocation(e.target.value)}
+                                        placeholder="Enter Description"
+                                    />
                                 </div>
                                 <div className="form-field">
                                     <label>Description:</label>
