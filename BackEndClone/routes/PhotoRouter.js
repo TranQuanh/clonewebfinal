@@ -1,0 +1,102 @@
+const express = require("express");
+const Photo = require("../db/photoModel");
+const router = express.Router();
+const multer = require("multer");
+const path = require("path");
+const User = require("../db/userModel");
+const mongoose = require("mongoose");
+const {request,response} = require("express");
+
+function requireAuth(request,response,next){
+    if(!request.session.userID){
+        return response.status(401).json({error: "Unauthorized - No session"})
+    }
+    next();
+}
+
+const storage = multer.diskStorage({
+    destination:(req,file,cb)=>{
+        cb(null,"images")
+    },
+    filename:(req,file,cb)=>{
+        const ex = path.extname(file.originalname);
+        const filename = Date.now() + '-' + Math.round(Math.random()*1E9) +ex;
+        cb(null,filename);
+    }
+});
+const upload = multer({storage: storage});
+
+router.post("/new",requireAuth,upload.single("photo"),async(request,response)=>{
+    if(!request.file){
+        return response.status(400).json({error: "No image provided"});
+    }
+    try{
+        const photo = new Photo({
+            user_id: request.session.userID,
+            file_name: request.file.filename,
+            date_time: new Date(),
+            comments: [],
+        });
+        await photo.save();
+        return response.status(200).json({message: "Photo uploaded successfully"});
+    }catch(error){
+        console.log("error in photo post: ", error);
+        return response.status(500).json({error: "Internal server error"});
+    }
+});
+
+router.get("/photoOfUser/:id",requireAuth,async(request,response)=>{
+    try{
+        const id = request.params.id;
+        const photos = await Photo.find({user_id:id})
+            .populate("comments.user_id", "_id first_name last_name")
+            .exec();
+        const photoComents = photos.map(photo=>{
+            const comments = photo.comments.map(comment=>{
+                return{
+                    _id: comment._id,
+                    comment: comment.comment,
+                    date_time: comment.date_time,
+                    user: comment.user_id,
+                }
+            });
+            return{
+                _id: photo._id,
+                file_name: photo.file_name,
+                date_time: photo.date_time,
+                user_id: photo.user_id,
+                comments: comments,
+            }
+        });
+        return response.status(200).json(photoComents);
+
+    }catch(error){
+        console.log(error);
+        return response.status(500).json({error: "Internal server error"})
+    }
+});
+
+router.post("/commentOfPhoto/:photo_id",requireAuth,async(request,response)=>{
+    const photoID = request.params.photo_id;
+    const userID = request.session.userID;
+
+    const {comment} = request.body;
+    if(!comment){
+        return response.status(400).json({error:"empty comment"})
+    }
+    try{
+        const photo = await Photo.findById(photoID);
+        const newComment = {
+            comment: comment,
+            date_time: new Date(),
+            user_id: userID,
+        }
+        await photo.comments.push(newComment);
+        await photo.save();
+        return response.status(200).json({message:"comment added successfully"});
+    }catch(err){
+        console.log(err);
+        return response.status(500).json({error: "Internal server error"})
+    }
+});
+module.exports = router;

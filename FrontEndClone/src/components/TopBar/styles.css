@@ -1,0 +1,31 @@
+.topbar-appBar .MuiToolbar-root {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-left: auto;
+  padding-right: 40px; /* ← Thêm dòng này */
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+.logout-button {
+  padding: 8px 16px;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.login-prompt {
+  color: white;
+  font-weight: bold;
+}
