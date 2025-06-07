@@ -6,12 +6,21 @@ const path = require("path");
 const User = require("../db/userModel");
 const mongoose = require("mongoose");
 const {request,response} = require("express");
+const jwt = require('jsonwebtoken');
 
-function requireAuth(request,response,next){
-    if(!request.session.userID){
-        return response.status(401).json({error: "Unauthorized - No session"})
+function requireAuth(request, response, next){
+    const token = request.cookies.jwt;
+    if (!token) {
+        return response.status(401).json({error: "Unauthorized - No token"});
     }
-    next();
+
+    try {
+        const decoded = jwt.verify(token, global.JWT_SECRET);
+        request.userID = decoded.userID;
+        next();
+    } catch (error) {
+        return response.status(401).json({error: "Unauthorized - Invalid token"});
+    }
 }
 
 const storage = multer.diskStorage({
@@ -26,13 +35,13 @@ const storage = multer.diskStorage({
 });
 const upload = multer({storage: storage});
 
-router.post("/new",requireAuth,upload.single("photo"),async(request,response)=>{
+router.post("/new", requireAuth, upload.single("photo"), async(request, response) => {
     if(!request.file){
         return response.status(400).json({error: "No image provided"});
     }
     try{
         const photo = new Photo({
-            user_id: request.session.userID,
+            user_id: request.userID,
             file_name: request.file.filename,
             date_time: new Date(),
             comments: [],
@@ -45,7 +54,7 @@ router.post("/new",requireAuth,upload.single("photo"),async(request,response)=>{
     }
 });
 
-router.get("/photoOfUser/:id",requireAuth,async(request,response)=>{
+router.get("/photoOfUser/:id", requireAuth, async(request, response) => {
     try{
         const id = request.params.id;
         const photos = await Photo.find({user_id:id})
@@ -76,10 +85,10 @@ router.get("/photoOfUser/:id",requireAuth,async(request,response)=>{
     }
 });
 
-router.post("/commentOfPhoto/:photo_id",requireAuth,async(request,response)=>{
+router.post("/commentOfPhoto/:photo_id", requireAuth, async(request, response) => {
     try {
         const photoID = request.params.photo_id;
-        const userID = request.session.userID;
+        const userID = request.userID;
         const {comment} = request.body;
 
         if(!comment || !comment.trim()){

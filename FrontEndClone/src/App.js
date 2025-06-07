@@ -2,7 +2,7 @@ import './App.css';
 
 import React from "react";
 import { Typography, Paper } from "@mui/material";
-import { BrowserRouter as Router, Route, Routes, Navigate,useNavigate } from "react-router-dom";
+import { BrowserRouter as Router, Route, Routes, Navigate, useNavigate } from "react-router-dom";
 import {useState, useEffect} from "react";
 import TopBar from "./components/TopBar";
 import UserDetail from "./components/UserDetail";
@@ -17,28 +17,30 @@ const App = () => {
   const navigate = useNavigate();
   const [photoUpdateTrigger, setPhotoUpdateTrigger] = useState(false);
 
-  // Kiểm tra session khi component mount
-
+  // Kiểm tra auth khi component mount
   useEffect(() => {
-    const checkSession = async () => {
+    const checkAuth = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/user/check-session`, {
+        const response = await fetch(`${API_BASE_URL}/api/user/check-auth`, {
           credentials: 'include'
         });
         if (response.ok) {
           const user = await response.json();
           setCurrentUser(user);
+        } else {
+          setCurrentUser(null);
         }
       } catch (error) {
-        console.error('Session check failed:', error);
+        console.error('Auth check failed:', error);
+        setCurrentUser(null);
       }
     };
-    checkSession();
+    checkAuth();
   }, []);
 
-  const handleLoginSuccess = (user) => {
-    setCurrentUser(user);
-    navigate(`/users/${user._id}`);
+  const handleLoginSuccess = (data) => {
+    setCurrentUser(data.user);
+    navigate(`/users/${data.user._id}`);
   }
 
   const handleLogout = () => {

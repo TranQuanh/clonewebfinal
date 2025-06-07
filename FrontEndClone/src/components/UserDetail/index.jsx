@@ -12,26 +12,21 @@ function UserDetail() {
     const [user, setUser] = useState(null);
 
     useEffect(() => {
-        try{
-            const fetchUser = async () => {
-                console.log(`${API_BASE_URL}/api/user/${userId}`);
-                const response = await fetch(`${API_BASE_URL}/api/user/${userId}`,
-                  {
-                    method: "GET",
-                    credentials: "include",
-                  }
-                );
-                if(response.ok){
-                    const data = await response.json();
-                    setUser(data);
-                    console.log(user);
-                }else{
-                    console.error("Failed to fetch user detail");
+        const fetchUserDetail = async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/user/${userId}`, {
+                    credentials: 'include'
+                });
+                if (response.ok) {
+                    const userData = await response.json();
+                    setUser(userData);
                 }
-            };
-            fetchUser();
-        }catch(err){
-            console.error("Error fetching user detail:", err);
+            } catch (error) {
+                console.error('Error fetching user details:', error);
+            }
+        };
+        if (userId) {
+            fetchUserDetail();
         }
     }, [userId]);
 

@@ -3,22 +3,25 @@ const User = require("../db/userModel");
 const router = express.Router();
 const {request, response} = require("express");
 const mongoose = require("mongoose");
-function requireAuth(request, response, next){    
-    console.log("=== AUTH CHECK ===");
-    console.log("Session ID: ", request.session.id);
-    console.log("Session UserId: ",request.session.userID);
-    console.log("Full session",request.session);
-    console.log("Cookies:", request.headers.cookie);
-    console.log("====================")
+const jwt = require('jsonwebtoken');
 
-    if(!request.session.userID){
-        return response.status(401).json({error: "Unauthorized - No session"});
+function requireAuth(request, response, next){    
+    const token = request.cookies.jwt;
+    if (!token) {
+        return response.status(401).json({error: "Unauthorized - No token"});
     }
-    next();
+
+    try {
+        const decoded = jwt.verify(token, global.JWT_SECRET);
+        request.userID = decoded.userID;
+        next();
+    } catch (error) {
+        return response.status(401).json({error: "Unauthorized - Invalid token"});
+    }
 }
 
-router.post("/admin/login",async(request,response)=>{
-    const {login_name,password} = request.body;
+router.post("/admin/login", async(request, response) => {
+    const {login_name, password} = request.body;
     if(!login_name || !password){
         return response.status(400).json({error: "Missing login_name or password"});
     }
@@ -27,25 +30,42 @@ router.post("/admin/login",async(request,response)=>{
         if(!user || user.password !== password){
             return response.status(400).json({error: "Invalid login_name or password"});
         }
-        request.session.userID = user._id;
-        console.log("Logged in user_id: ", request.session.userID);
+        
+        // Tạo JWT token
+        const token = jwt.sign({userID: user._id}, global.JWT_SECRET,{expiresIn: '24h'});
+        
+        console.log("=== JWT TOKEN INFO ===");
+        console.log("Token:", token);
+        
+        // Lưu token vào cookie
+        response.cookie('jwt', token, {
+            httpOnly: true,
+            secure: true,
+            maxAge: 24 * 60 * 60 * 1000, // 24 giờ
+            sameSite: 'lax'
+        });
+
+        console.log("=== COOKIE INFO ===");
+        console.log("Cookie sent:", response.getHeader('Set-Cookie'));
+        console.log("==================");
+
         response.status(200).json({
-            _id: user._id,
-            login_name: user.login_name,
-            first_name: user.first_name,
-            last_name: user.last_name,
+            user: {
+                _id: user._id,
+                login_name: user.login_name,
+                first_name: user.first_name,
+                last_name: user.last_name,
+            }
         });
     }catch(error){
         console.log("Error in login: ", error);
         return response.status(500).json({error: "Internal server error"});
     }
 });
-router.get("/check-session", async (request, response) => {
-    if (!request.session.userID) {
-        return response.status(401).json({ error: "No active session" });
-    }
+
+router.get("/check-auth", requireAuth, async (request, response) => {
     try {
-        const user = await User.findById(request.session.userID);
+        const user = await User.findById(request.userID);
         if (!user) {
             return response.status(404).json({ error: "User not found" });
         }
@@ -56,7 +76,7 @@ router.get("/check-session", async (request, response) => {
             last_name: user.last_name,
         });
     } catch (error) {
-        console.error("Session check error:", error);
+        console.error("Auth check error:", error);
         return response.status(500).json({ error: "Internal server error" });
     }
 });
@@ -102,21 +122,13 @@ router.post("/register",async(request,reponse)=>{
         }
 });
 
-router.post("/admin/logout", async(request,response)=>{
-    if(!request.session.userID){
-        return response.status(401).json({error: "Unauthorized - No session"});
-    }
-    const userId = request.session.userID;
-    request.session.destroy((error)=>{
-        if(error){
-            return response.status(500).json({error: "Error logging out"});
-        }
-        console.log("Logged out user_id: ", userId);
-        response.clearCookie("connect.sid");
-        return response.status(200).json({message:"log out successfully"});
-    });
+router.post("/admin/logout", requireAuth, (request, response) => {
+    // Xóa JWT cookie
+    response.clearCookie('jwt');
+    return response.status(200).json({ message: "Logged out successfully" });
 });
-router.get("/list",requireAuth,async(request,response)=>{
+
+router.get("/list", requireAuth, async(request, response) => {
     try{
         const users = await User.find({},"_id first_name last_name");
         return response.status(200).json(users);
@@ -124,7 +136,8 @@ router.get("/list",requireAuth,async(request,response)=>{
         return response.status(500).json({error:"Internal server error"});
     }
 });
-router.get("/:id",requireAuth,async(request,response)=>{
+
+router.get("/:id", requireAuth, async(request, response) => {
     const id = request.params.id;
     if(!mongoose.Types.ObjectId.isValid(id)){
         return response.status(404).json({error: "Invalid user ID"});
@@ -139,7 +152,5 @@ router.get("/:id",requireAuth,async(request,response)=>{
         return response.status(500).json({error: "Internal server error"});
     }
 });
-
-
 
 module.exports = router;

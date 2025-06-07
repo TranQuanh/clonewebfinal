@@ -53,7 +53,6 @@ function TopBar ({user, onLogout, onPhotoUpload}) {
 
       if (response.ok) {
         console.log("Upload photo successfully");
-        // Nếu đang ở trang photos và có callback onPhotoUpload, gọi callback
         if (currentPath.includes('photos/') && onPhotoUpload) {
           onPhotoUpload();
         }
@@ -64,18 +63,17 @@ function TopBar ({user, onLogout, onPhotoUpload}) {
       console.error('Error uploading photo:', error);
     }
 
-    // Reset input file để có thể upload lại cùng một ảnh
     event.target.value = '';
   };
 
-  const handleLogout = async() =>{
-    try{
+  const handleLogout = async() => {
+    try {
       const response = await fetch(`${API_BASE_URL}/api/user/admin/logout`,
         {
           method: "POST",
-          credentials: "include",
-          headers:{
-            "Content-Type": "application/json",
+          credentials: 'include',
+          headers: {
+            "Content-Type": "application/json"
           }
         }
       );
@@ -104,39 +102,42 @@ function TopBar ({user, onLogout, onPhotoUpload}) {
 
   return (
     <div className="topbar-appBar">
-        <div>
-        <h2 variant="h5" color="inherit">
-          Tran Quang Anh - B22DCCN044
-        </h2>
+        <div className="topbar-left">
+          {user ? (
+            <span className="user-greeting">Hi {user.first_name} {user.last_name}</span>
+          ) : (
+            <span className="user-greeting">Welcome</span>
+          )}
         </div>
         <div className="topbar-right">
-          {user ?(
+          {user ? (
             <>
               <div className="user-path">
                 {getPathDisplay()}
               </div>
               <div className="user-info">
-              <div className="user-add">
-                <span className="greeting">Hi {user.first_name}</span>
-                <div className="add-photo">
-                  <label htmlFor="photo-upload" className="photo-upload-label">Add Photo</label>
-                  <input 
-                    type="file" 
-                    id="photo-upload" 
-                    className="photo-input" 
-                    accept="image/*"
-                    onChange={handlePhotoUpload}
-                  />
+                <div className="user-add">
+                  <div className="add-photo">
+                    <label htmlFor="photo-upload" className="photo-upload-label">Add Photo</label>
+                    <input 
+                      type="file" 
+                      id="photo-upload" 
+                      className="photo-input" 
+                      accept="image/*"
+                      onChange={handlePhotoUpload}
+                    />
+                  </div>
                 </div>
+                <button className="logout-button" onClick={handleLogout}>
+                  Logout
+                </button>
               </div>
-              <button className="logout-button" onClick={handleLogout}>
-                Logout
-              </button>
-            </div>
             </>
-          ): (<div className="login-prompt">
-            Please Login
-          </div>)}
+          ) : (
+            <div className="login-prompt">
+              Please Login
+            </div>
+          )}
         </div>
     </div>
   );

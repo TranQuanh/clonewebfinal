@@ -23,22 +23,17 @@ function UserList() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/user/list`,
-          {
-            method: 'GET',
-            credentials: 'include'
-          },
-        );
-        if(response.ok) {
-          const data = await response.json();
-          setUsers(data);
-          console.log(data);
+        const response = await fetch(`${API_BASE_URL}/api/user/list`, {
+          credentials: 'include'
+        });
+        if (response.ok) {
+          const users = await response.json();
+          setUsers(users);
         }
+      } catch (error) {
+        console.error('Error fetching users:', error);
       }
-      catch(err) {
-        console.error('Error fetching users:', err);
-      }
-    }
+    };
     fetchUsers();
   }, []);
 

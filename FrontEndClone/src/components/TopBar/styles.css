@@ -14,6 +14,19 @@
   padding: 0 20px;
 }
 
+.topbar-left {
+  display: flex;
+  align-items: center;
+  padding-right: 20px;
+}
+
+.user-greeting {
+  font-size: 18px;
+  font-weight: bold;
+  color: white;
+  padding: 5px 15px;
+}
+
 .topbar-right {
   display: flex;
   align-items: center;

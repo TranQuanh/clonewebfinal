@@ -15,57 +15,47 @@ function UserPhotos({ photoUpdateTrigger }) {
 
   const fetchPhotos = async () => {
     try {
-      console.log("Fetching photos...");
-      const response = await fetch(
-        `${API_BASE_URL}/api/photo/photoOfUser/${userId}`,
-        {
-          method: "GET",
-          credentials: "include",
-        }
-      );
-
+      const response = await fetch(`${API_BASE_URL}/api/photo/photoOfUser/${userId}`, {
+        credentials: 'include'
+      });
       if (response.ok) {
-        const data = await response.json();
-        console.log("Received data from API:", data);
-        setPhotos(data);
-      } else {
-        console.error("Failed to fetch photos");
+        const photosData = await response.json();
+        setPhotos(photosData);
       }
     } catch (error) {
-      console.error("Error fetching photos:", error);
+      console.error('Error fetching photos:', error);
     }
   };
 
   useEffect(() => {
-    console.log("useEffect triggered, fetching photos...");
-    fetchPhotos();
+    if (userId) {
+      fetchPhotos();
+    }
   }, [userId, photoUpdateTrigger]);
 
-  const handleAddComment = async (photoId) => {
-    if (!comment.trim()) return;
-
+  const handleAddComment = async (photoId, comment) => {
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/photo/commentOfPhoto/${photoId}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            comment: comment,
-          }),
-          credentials: "include",
-        }
-      );
+      const response = await fetch(`${API_BASE_URL}/api/photo/commentOfPhoto/${photoId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({ comment })
+      });
+
       if (response.ok) {
-        setComment("");
-        await fetchPhotos();
-      } else {
-        console.error("Failed to add comment");
+        // Refresh photos after adding comment
+        const updatedResponse = await fetch(`${API_BASE_URL}/api/photo/photoOfUser/${userId}`, {
+          credentials: 'include'
+        });
+        if (updatedResponse.ok) {
+          const updatedPhotos = await updatedResponse.json();
+          setPhotos(updatedPhotos);
+        }
       }
-    } catch (err) {
-      console.log(err);
+    } catch (error) {
+      console.error('Error adding comment:', error);
     }
   };
 
@@ -93,14 +83,12 @@ function UserPhotos({ photoUpdateTrigger }) {
                     <input
                       type="text"
                       name="comment"
-                      value={comment}
                       placeholder="Add a comment..."
-                      onChange={(e) => setComment(e.target.value)}
                       className="form-field full-width"
                     />
                     <button
                       className="btn comment-button"
-                      onClick={() => handleAddComment(photo._id)}
+                      onClick={(e)=>{handleAddComment(photo._id,e.target.value)}}
                     >
                       Add Comment
                     </button>

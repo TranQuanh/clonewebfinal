@@ -3,33 +3,25 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 const dbConnect = require("./db/dbConnect");
-const session = require("express-session");
 const path = require("path");
+const cookieParser = require('cookie-parser');
 const UserRouter = require("./routes/UserRouter");
 const PhotoRouter = require("./routes/PhotoRouter");
+
+// JWT Secret Key
+const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key_here";
+global.JWT_SECRET = JWT_SECRET;
 
 dbConnect();
 
 app.use(cors({
-  origin: true,
+  origin: 'http://localhost:3000',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Accept', 'Authorization']
 }));
 
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET || "your_super_secret_key_here",
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      httpOnly: true,
-      maxAge: 30 * 60 * 1000,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === "production"
-    },
-  })
-);
+app.use(cookieParser());
 
 const imagesPath = path.join(__dirname,'images');
 app.use("/images",express.static(imagesPath));
